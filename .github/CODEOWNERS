@@ -1,0 +1,14 @@
+# Default owner
+@jchummel2
+
+# Module Owners
+/weather-api/ @jchummel2
+/weather/ @jchummel2
+/geofence/ @jchummel2
+
+# Gradle Files
+*.gradle @jchummel2
+/settings.gradle @jchummel2
+
+# Github configs
+/.github/ @jchummel2
