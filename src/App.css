@@ -44,9 +44,13 @@
   height: 100vh;
   box-sizing: border-box;
   padding: clamp(1.25rem, 3vw, 2.75rem) clamp(1rem, 5vw, 4rem) 3rem;
+  overflow-y: auto;
+  scrollbar-width: none;
   color: #f4f7fb;
   background: radial-gradient(circle at 50% -20%, #345b87 0, #1b3154 34%, #101d35 76%);
 }
+
+.weather-screen::-webkit-scrollbar { display: none; }
 
 .weather-header,
 .forecast-section {

@@ -88,7 +88,7 @@ function formatUpdatedAt(value: string) {
 
 function WeatherIcon({ condition, size = "small" }: { condition: string; size?: "small" | "large" }) {
   const normalizedCondition = condition.toLowerCase();
-  const rainy = /rain|shower|storm|thunder/.test(normalizedCondition);
+  const rainy = /rain|drizzle|shower|storm|thunder/.test(normalizedCondition);
   const snowy = /snow|flurr/.test(normalizedCondition);
   const cloudy = /cloud|overcast|fog|haze/.test(normalizedCondition);
 
