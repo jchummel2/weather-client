@@ -12,7 +12,6 @@ export default function App() {
         onDone={(current, forecast, approxLocation) =>
           setState({ stage: "ready", current, forecast, approxLocation })
         }
-        onError={(message) => setState({ stage: "error", message })}
       />
     );
   }
