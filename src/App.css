@@ -96,7 +96,8 @@
 .carousel-controls { display: flex; gap: 0.45rem; }
 .carousel-controls button { width: 2.2rem; height: 2.2rem; padding: 0; border: 1px solid rgba(224, 236, 252, 0.25); border-radius: 50%; color: #f4f7fb; background: rgba(255, 255, 255, 0.1); font: 1.25rem Arial, sans-serif; line-height: 1; }
 .carousel-controls button:hover { color: #101d35; background: #e8f2ff; }
-.forecast-carousel { display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.15rem 0.15rem 1.25rem; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+.forecast-carousel { display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.15rem 0.15rem 1.25rem; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; }
+.forecast-carousel::-webkit-scrollbar { display: none; }
 .forecast-card { flex: 0 0 min(15rem, 78vw); min-height: 11rem; padding: 1.15rem; border: 1px solid rgba(224, 236, 252, 0.18); border-radius: 10px; background: rgba(255, 255, 255, 0.1); box-shadow: 0 8px 24px rgba(3, 11, 26, 0.18); scroll-snap-align: start; }
 .forecast-card-topline { display: flex; align-items: start; justify-content: space-between; gap: 0.5rem; }
 .forecast-card h3 { margin: 0; font-size: 1.05rem; }

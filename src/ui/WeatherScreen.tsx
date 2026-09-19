@@ -52,7 +52,6 @@ export function WeatherScreen({
       <section className="forecast-section" aria-labelledby="forecast-heading">
         <div className="section-heading">
           <div>
-            <p className="section-label">The week ahead</p>
             <h2 id="forecast-heading">Forecast</h2>
           </div>
           <div className="carousel-controls">
