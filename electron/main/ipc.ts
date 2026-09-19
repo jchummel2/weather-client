@@ -5,6 +5,7 @@ import {
   saveLocation,
   getCurrent,
   getForecast,
+  getLocation,
 } from "./backendApi";
 import { getCurrentWindowsLocation } from "./nativeLocation";
 import { requestLocation } from "./locationIpc";
@@ -38,7 +39,7 @@ export function registerIpcHandlers() {
 
   ipcMain.handle("app:bootstrap", async (_e, { latitude, longitude }) => {
     const result = await runBootstrap(
-      { createSession, saveLocation, getCurrent, getForecast },
+      { createSession, saveLocation, getCurrent, getForecast, getLocation },
       latitude,
       longitude,
     );

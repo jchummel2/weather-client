@@ -1,15 +1,16 @@
-import type { ForecastDto, ForecastListDto } from "./backendApi.types";
+import type { ForecastDto, ForecastListDto, LocationDtoJsonLd } from "./backendApi.types";
 
 export type BootstrapDependencies = {
   createSession: () => Promise<string>;
   saveLocation: (token: string, latitude: number, longitude: number) => Promise<void>;
   getCurrent: (token: string) => Promise<ForecastDto>;
   getForecast: (token: string) => Promise<ForecastListDto>;
+  getLocation: (token: string) => Promise<LocationDtoJsonLd>;
 };
 
 export type BootstrapFlowResult =
-  | { ok: true; sessionToken: string; current: ForecastDto; forecast: ForecastListDto }
-  | { ok: false; step: "createSession" | "saveLocation" | "current" | "forecast"; message: string };
+  | { ok: true; sessionToken: string; current: ForecastDto; forecast: ForecastListDto; location: LocationDtoJsonLd }
+  | { ok: false; step: "createSession" | "saveLocation" | "current" | "forecast" | "location"; message: string };
 
 export async function runBootstrap(
   dependencies: BootstrapDependencies,
@@ -38,9 +39,10 @@ export async function runBootstrap(
 
   try {
     const forecast = await dependencies.getForecast(token);
-    return { ok: true, sessionToken: token, current, forecast };
+    const location = await dependencies.getLocation(token);
+    return { ok: true, sessionToken: token, current, forecast, location };
   } catch (error: unknown) {
-    return { ok: false, step: "forecast", message: errorMessage(error) };
+    return { ok: false, step: "location", message: errorMessage(error) };
   }
 }
 

@@ -125,6 +125,25 @@ async function getForecast(token) {
   }
   return jsonOrThrow(resp, "forecast");
 }
+async function getLocation(token) {
+  console.debug("getLocation: using token", { token });
+  async function doGet(tkn) {
+    return fetchWithLogging(`${BASE_URL}/v4/weather/location`, {
+      headers: {
+        ...sessionHeader(tkn),
+        Accept: "application/ld+json"
+      }
+    }, "getLocation-GET");
+  }
+  let resp = await doGet(token);
+  if (resp.status === 401) {
+    console.warn("getLocation: got 401, refreshing session and retrying");
+    sessionToken = null;
+    const newToken = await createSession();
+    resp = await doGet(newToken);
+  }
+  return jsonOrThrow(resp, "location");
+}
 function isRecord(value) {
   return typeof value === "object" && value !== null;
 }
@@ -268,9 +287,9 @@ ${stderr}`));
     });
   });
 }
-async function requestLocation(getLocation) {
+async function requestLocation(getLocation2) {
   try {
-    return { ok: true, location: await getLocation() };
+    return { ok: true, location: await getLocation2() };
   } catch (error) {
     const details = error;
     return {
@@ -300,9 +319,10 @@ async function runBootstrap(dependencies, latitude, longitude) {
   }
   try {
     const forecast = await dependencies.getForecast(token);
-    return { ok: true, sessionToken: token, current, forecast };
+    const location = await dependencies.getLocation(token);
+    return { ok: true, sessionToken: token, current, forecast, location };
   } catch (error) {
-    return { ok: false, step: "forecast", message: errorMessage(error) };
+    return { ok: false, step: "location", message: errorMessage(error) };
   }
 }
 function errorMessage(error) {
@@ -330,7 +350,7 @@ function registerIpcHandlers() {
   });
   ipcMain.handle("app:bootstrap", async (_e, { latitude, longitude }) => {
     const result = await runBootstrap(
-      { createSession, saveLocation, getCurrent, getForecast },
+      { createSession, saveLocation, getCurrent, getForecast, getLocation },
       latitude,
       longitude
     );

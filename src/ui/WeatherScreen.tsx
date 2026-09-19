@@ -2,6 +2,7 @@ import { useRef } from "react";
 import type {
   ForecastDto,
   ForecastListDto,
+  LocationDtoJsonLd,
 } from "../../electron/main/backendApi.types";
 
 export function WeatherScreen({
@@ -11,9 +12,11 @@ export function WeatherScreen({
 }: {
   current: ForecastDto;
   forecast: ForecastListDto;
-  location?: { latitude: number; longitude: number; city?: string | null };
+  location: LocationDtoJsonLd;
 }) {
-  const locationLabel = location?.city ?? "Current location";
+  const locality = location.address?.addressLocality?.trim();
+  const region = location.address?.addressRegion?.trim();
+  const locationLabel = locality && region ? `${locality}, ${region}` : "Location unavailable";
   const forecastCarousel = useRef<HTMLDivElement>(null);
 
   function moveForecast(direction: "back" | "forward") {

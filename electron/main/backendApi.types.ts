@@ -47,10 +47,10 @@ export type LocationDtoJsonLd = {
     name: string;
     address: {
         "@type": "PostalAddress";
-        addressLocality: string;
-        addressRegion: string;
+        addressLocality?: string | null;
+        addressRegion?: string | null;
     } | null;
-    dateModified: string;
+    dateModified?: string;
 };
 
 export type BootstrapResult = 

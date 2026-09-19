@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ForecastDto, ForecastListDto } from "../../electron/main/backendApi.types";
+import type { ForecastDto, ForecastListDto, LocationDtoJsonLd } from "../../electron/main/backendApi.types";
 
 type LocationState = "idle" | "loading" | "success" | "permission-denied" | "unavailable" | "error";
 
 export function LaunchScreen({
   onDone,
 }: {
-  onDone: (current: ForecastDto, forecast: ForecastListDto, location: { latitude: number; longitude: number; city?: string | null }) => void;
+  onDone: (current: ForecastDto, forecast: ForecastListDto, location: LocationDtoJsonLd) => void;
 }) {
   const [state, setState] = useState<LocationState>("idle");
   const [message, setMessage] = useState("Use the Weatherly service to load local weather.");
@@ -38,13 +38,13 @@ export function LaunchScreen({
         setMessage(`${result.step}: ${result.message}`);
         return;
       }
-      if (!result.current || !result.forecast) {
+      if (!result.current || !result.forecast || !result.location) {
         setState("error");
-        setMessage("Invalid server response: missing current or forecast data");
+        setMessage("Invalid server response: missing weather location data");
         return;
       }
 
-      onDone(result.current, result.forecast, { latitude, longitude });
+      onDone(result.current, result.forecast, result.location);
     } catch (error: unknown) {
       setState("error");
       setMessage(error instanceof Error ? error.message : "Location startup failed.");

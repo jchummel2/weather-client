@@ -1,6 +1,7 @@
 import type {
   ForecastDto,
   ForecastListDto,
+  LocationDtoJsonLd,
 } from "./backendApi.types";
 
 const BASE_URL = "http://localhost:8080";
@@ -167,6 +168,28 @@ export async function getForecast(token: string): Promise<ForecastListDto> {
   }
 
   return jsonOrThrow(resp, "forecast");
+}
+
+export async function getLocation(token: string): Promise<LocationDtoJsonLd> {
+  console.debug("getLocation: using token", { token });
+  async function doGet(tkn: string) {
+    return fetchWithLogging(`${BASE_URL}/v4/weather/location`, {
+      headers: {
+        ...sessionHeader(tkn),
+        Accept: "application/ld+json",
+      },
+    }, "getLocation-GET");
+  }
+
+  let resp = await doGet(token);
+  if (resp.status === 401) {
+    console.warn("getLocation: got 401, refreshing session and retrying");
+    sessionToken = null;
+    const newToken = await createSession();
+    resp = await doGet(newToken);
+  }
+
+  return jsonOrThrow(resp, "location");
 }
 
 export { errorMessage };
