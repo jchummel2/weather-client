@@ -31,12 +31,23 @@ function resolvePreloadPath(): string {
   throw new Error("Preload file not found.");
 }
 
+function resolveAppIconPath(): string | undefined {
+  const candidates = [
+    path.join(__dirname, "../dist/weatherly-icon.png"),
+    path.join(app.getAppPath(), "public/weatherly-icon.png"),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
 function createWindow(): BrowserWindow {
   const preloadPath = resolvePreloadPath();
+  const iconPath = resolveAppIconPath();
 
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
+    ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,

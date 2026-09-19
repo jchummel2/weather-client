@@ -2,9 +2,10 @@ directories:
   output: release/${version}
   buildResources: build
 $schema: https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json
-appId: YourAppID
+appId: com.weatherly.app
 asar: true
-productName: YourAppName
+productName: Weatherly
+icon: public/weatherly-icon.png
 files:
   - filter:
       - dist

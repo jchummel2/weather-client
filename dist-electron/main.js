@@ -353,11 +353,20 @@ function resolvePreloadPath() {
   console.error(fs.readdirSync(__dirname$1));
   throw new Error("Preload file not found.");
 }
+function resolveAppIconPath() {
+  const candidates = [
+    path.join(__dirname$1, "../dist/weatherly-icon.png"),
+    path.join(app.getAppPath(), "public/weatherly-icon.png")
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
 function createWindow() {
   const preloadPath = resolvePreloadPath();
+  const iconPath = resolveAppIconPath();
   const win = new BrowserWindow({
     width: 1e3,
     height: 700,
+    ...iconPath ? { icon: iconPath } : {},
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
