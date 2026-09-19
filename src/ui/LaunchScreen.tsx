@@ -83,26 +83,60 @@ export function LaunchScreen({
 }
 
 function ManualLocationForm({ onSubmit }: { onSubmit: (lat: number, lon: number) => Promise<void> | void }) {
-  const [lat, setLat] = useState(0);
-  const [lon, setLon] = useState(0);
+  const [lat, setLat] = useState("");
+  const [lon, setLon] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    const latitude = Number(lat);
+    const longitude = Number(lon);
+
+    if (!lat.trim() || !lon.trim() || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      setError("Enter numeric latitude and longitude values.");
+      return;
+    }
+
+    if (latitude < -90 || latitude > 90) {
+      setError("Latitude must be between -90 and 90.");
+      return;
+    }
+
+    if (longitude < -180 || longitude > 180) {
+      setError("Longitude must be between -180 and 180.");
+      return;
+    }
+
+    setError(null);
+    setSubmitting(true);
+    try {
+      await onSubmit(latitude, longitude);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(Number(lat), Number(lon));
+        void submit();
       }}
     >
       <div style={{ marginBottom: 8 }}>
         <label>
-          Latitude: <input value={lat} onChange={(e) => setLat(Number(e.target.value))} />
+          Latitude: <input type="number" step="any" min="-90" max="90" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="38.9072" required />
         </label>
       </div>
       <div style={{ marginBottom: 8 }}>
         <label>
-          Longitude: <input value={lon} onChange={(e) => setLon(Number(e.target.value))} />
+          Longitude: <input type="number" step="any" min="-180" max="180" value={lon} onChange={(e) => setLon(e.target.value)} placeholder="-77.0369" required />
         </label>
       </div>
-      <button type="submit">Use this location</button>
+      {error ? <div role="alert" style={{ marginBottom: 8 }}>{error}</div> : null}
+      <button type="submit" disabled={submitting}>
+        {submitting ? "Loading weather…" : "Use this location"}
+      </button>
     </form>
   );
 }
