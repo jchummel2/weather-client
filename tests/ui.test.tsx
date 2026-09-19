@@ -13,20 +13,25 @@ describe('UI rendering', () => {
 
   it('renders the current weather summary and forecast controls', () => {
     const current = {
-      periodName: 'Today',
-      shortForecast: 'Clear',
-      temperature: 70,
-      temperatureUnit: 'F',
+      '@context': 'https://schema.org' as const,
+      '@type': 'WeatherForecast' as const,
+      geo: { '@type': 'GeoCoordinates' as const, latitude: 42.5, longitude: -94.17 },
+      name: 'Today',
+      description: 'Clear',
+      temperature: { '@type': 'QuantitativeValue' as const, value: 70, unitText: 'F' },
       windSpeed: '5 mph',
       windDirection: 'N',
-      fetchedAt: '2024-01-01T12:00:00Z',
+      dateModified: '2024-01-01T12:00:00Z',
     };
 
     const forecast = {
-      fetchedAt: '2024-01-01T12:00:00Z',
-      periods: [
-        { ...current, periodName: 'Tonight' },
-        { ...current, periodName: 'Tomorrow' },
+      '@context': 'https://schema.org' as const,
+      '@type': 'ItemList' as const,
+      geo: current.geo,
+      dateModified: '2024-01-01T12:00:00Z',
+      itemListElement: [
+        { ...current, name: 'Tonight' },
+        { ...current, name: 'Tomorrow' },
       ],
     };
 

@@ -6,21 +6,51 @@ export type CreateSessionResponse = {
 export type LocationDto = {
     latitude: number;
     longitude: number;
-}
+};
+
+export type GeoCoordinatesJsonLd = {
+    "@type": "GeoCoordinates";
+    latitude: number;
+    longitude: number;
+};
+
+export type QuantitativeValueJsonLd = {
+    "@type": "QuantitativeValue";
+    value: number | null;
+    unitText: string;
+};
 
 export type ForecastDto = {
-  periodName: string;
-  shortForecast: string;
-  temperature: number | null;
-  temperatureUnit: string;
+    "@context": "https://schema.org";
+    "@type": "WeatherForecast";
+    geo: GeoCoordinatesJsonLd;
+    name: string;
+    description: string;
+    temperature: QuantitativeValueJsonLd;
   windSpeed: string;
   windDirection: string;
-  fetchedAt: string;
+    dateModified: string;
 };
 
 export type ForecastListDto = {
-  fetchedAt: string;
-  periods: ForecastDto[];
+    "@context": "https://schema.org";
+    "@type": "ItemList";
+    geo: GeoCoordinatesJsonLd;
+    dateModified: string;
+    itemListElement: ForecastDto[];
+};
+
+export type LocationDtoJsonLd = {
+    "@context": "https://schema.org";
+    "@type": "Place";
+    geo: GeoCoordinatesJsonLd;
+    name: string;
+    address: {
+        "@type": "PostalAddress";
+        addressLocality: string;
+        addressRegion: string;
+    } | null;
+    dateModified: string;
 };
 
 export type BootstrapResult = 

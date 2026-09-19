@@ -22,7 +22,7 @@ async function fetchWithLogging(url: string, options: RequestInit | undefined, l
   try {
     console.debug(`HTTP ${label} -> ${url}`);
     if (options) {
-      const { headers, body } = options as any;
+      const { headers, body } = options;
       console.debug(`Request ${label} headers:`, headers);
       if (body) {
         // body may be a stringified JSON
@@ -77,14 +77,16 @@ export async function createSession(): Promise<string> {
   const tokenFromHeader = (resp.headers && resp.headers.get && resp.headers.get("x-session-token")) || null;
 
   // Also attempt to parse body for known token fields
-  const anyJson: any = await resp.json().catch(() => null);
-  const tokenFromBody = anyJson?.token ?? anyJson?.sessionToken ?? anyJson?.tokenValue ?? null;
+  const responseBody: unknown = await resp.json().catch(() => null);
+  const tokenFromBody = isRecord(responseBody)
+    ? responseBody.token ?? responseBody.sessionToken ?? responseBody.tokenValue ?? null
+    : null;
 
   const token = tokenFromHeader ?? tokenFromBody;
 
   if (!token) {
     throw new Error(
-      `createSession: server did not return a session token (body: ${JSON.stringify(anyJson)}, header x-session-token: ${tokenFromHeader})`
+      `createSession: server did not return a session token (body: ${JSON.stringify(responseBody)}, header x-session-token: ${tokenFromHeader})`
     );
   }
 
@@ -168,3 +170,7 @@ export async function getForecast(token: string): Promise<ForecastListDto> {
 }
 
 export { errorMessage };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
