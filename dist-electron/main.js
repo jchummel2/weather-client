@@ -56,12 +56,12 @@ async function createSession() {
     throw new Error(`createSession failed: ${resp.status} ${text}`);
   }
   const tokenFromHeader = resp.headers && resp.headers.get && resp.headers.get("x-session-token") || null;
-  const anyJson = await resp.json().catch(() => null);
-  const tokenFromBody = (anyJson == null ? void 0 : anyJson.token) ?? (anyJson == null ? void 0 : anyJson.sessionToken) ?? (anyJson == null ? void 0 : anyJson.tokenValue) ?? null;
+  const responseBody = await resp.json().catch(() => null);
+  const tokenFromBody = isRecord(responseBody) ? responseBody.token ?? responseBody.sessionToken ?? responseBody.tokenValue ?? null : null;
   const token = tokenFromHeader ?? tokenFromBody;
   if (!token) {
     throw new Error(
-      `createSession: server did not return a session token (body: ${JSON.stringify(anyJson)}, header x-session-token: ${tokenFromHeader})`
+      `createSession: server did not return a session token (body: ${JSON.stringify(responseBody)}, header x-session-token: ${tokenFromHeader})`
     );
   }
   sessionToken = String(token);
@@ -124,6 +124,9 @@ async function getForecast(token) {
     resp = await doGet(newToken);
   }
   return jsonOrThrow(resp, "forecast");
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null;
 }
 function validateLocation(value) {
   const location = value;

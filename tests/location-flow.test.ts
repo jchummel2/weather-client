@@ -3,8 +3,24 @@ import { runBootstrap } from "../electron/main/bootstrapFlow.ts";
 import { requestLocation } from "../electron/main/locationIpc.ts";
 import { validateLocation } from "../electron/main/locationValidation.ts";
 
-const current = { periodName: "Today", shortForecast: "Clear", temperature: 70, temperatureUnit: "F", windSpeed: "5 mph", windDirection: "N", fetchedAt: "now" };
-const forecast = { fetchedAt: "now", periods: [current] };
+const current = {
+  "@context": "https://schema.org" as const,
+  "@type": "WeatherForecast" as const,
+  geo: { "@type": "GeoCoordinates" as const, latitude: 42, longitude: -94 },
+  name: "Today",
+  description: "Clear",
+  temperature: { "@type": "QuantitativeValue" as const, value: 70, unitText: "F" },
+  windSpeed: "5 mph",
+  windDirection: "N",
+  dateModified: "now",
+};
+const forecast = {
+  "@context": "https://schema.org" as const,
+  "@type": "ItemList" as const,
+  geo: current.geo,
+  dateModified: "now",
+  itemListElement: [current],
+};
 
 function dependencies(overrides: Partial<Parameters<typeof runBootstrap>[0]> = {}) {
   return {

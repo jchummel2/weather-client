@@ -30,16 +30,16 @@ export function WeatherScreen({
           <p className="eyebrow">Local conditions</p>
           <h1>{locationLabel}</h1>
         </div>
-        <p className="updated-label">Updated {formatUpdatedAt(current.fetchedAt)}</p>
+        <p className="updated-label">Updated {formatUpdatedAt(current.dateModified)}</p>
       </header>
 
       <section className="current-conditions" aria-labelledby="current-heading">
         <p className="section-label" id="current-heading">Right now</p>
-        <WeatherIcon condition={current.shortForecast} size="large" />
+        <WeatherIcon condition={current.description} size="large" />
         <p className="current-temperature">
-          {current.temperature ?? "--"}<span>{current.temperatureUnit}</span>
+          {current.temperature.value ?? "--"}<span>{current.temperature.unitText}</span>
         </p>
-        <h2>{current.shortForecast}</h2>
+        <h2>{current.description}</h2>
         <div className="current-details">
           <span>Wind {current.windSpeed}</span>
           <span>{current.windDirection}</span>
@@ -59,16 +59,16 @@ export function WeatherScreen({
         </div>
 
         <div className="forecast-carousel" ref={forecastCarousel}>
-          {forecast.periods.map((period) => (
-            <article className="forecast-card" key={period.periodName}>
+          {forecast.itemListElement.map((period) => (
+            <article className="forecast-card" key={period.name}>
               <div className="forecast-card-topline">
-                <h3>{period.periodName}</h3>
-                <WeatherIcon condition={period.shortForecast} />
+                <h3>{period.name}</h3>
+                <WeatherIcon condition={period.description} />
               </div>
               <p className="forecast-temperature">
-                {period.temperature ?? "--"}<span>{period.temperatureUnit}</span>
+                {period.temperature.value ?? "--"}<span>{period.temperature.unitText}</span>
               </p>
-              <p className="forecast-condition">{period.shortForecast}</p>
+              <p className="forecast-condition">{period.description}</p>
               <p className="forecast-wind">{period.windSpeed} · {period.windDirection}</p>
             </article>
           ))}
