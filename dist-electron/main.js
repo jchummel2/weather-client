@@ -389,6 +389,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1e3,
     height: 700,
+    minWidth: 520,
+    minHeight: 560,
     ...iconPath ? { icon: iconPath } : {},
     webPreferences: {
       preload: preloadPath,

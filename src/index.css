@@ -8,11 +8,16 @@
   -webkit-font-smoothing: antialiased;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 button {
