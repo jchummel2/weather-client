@@ -41,7 +41,7 @@
 .launch-help { margin: 0 0 1.5rem; color: #713828; font-size: 1rem; }
 
 .weather-screen {
-  min-height: 100vh;
+  height: 100vh;
   box-sizing: border-box;
   padding: clamp(1.25rem, 3vw, 2.75rem) clamp(1rem, 5vw, 4rem) 3rem;
   color: #f4f7fb;
@@ -99,9 +99,9 @@
 .carousel-controls { display: flex; gap: 0.45rem; }
 .carousel-controls button { width: 2.2rem; height: 2.2rem; padding: 0; border: 1px solid rgba(224, 236, 252, 0.25); border-radius: 50%; color: #f4f7fb; background: rgba(255, 255, 255, 0.1); font: 1.25rem Arial, sans-serif; line-height: 1; }
 .carousel-controls button:hover { color: #101d35; background: #e8f2ff; }
-.forecast-carousel { display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.15rem 0.15rem 1.25rem; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; }
+.forecast-carousel { box-sizing: border-box; display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.15rem 0.15rem 1.25rem; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; }
 .forecast-carousel::-webkit-scrollbar { display: none; }
-.forecast-card { flex: 0 0 min(15rem, 78vw); min-height: 11rem; padding: 1.15rem; border: 1px solid rgba(224, 236, 252, 0.18); border-radius: 10px; background: rgba(255, 255, 255, 0.1); box-shadow: 0 8px 24px rgba(3, 11, 26, 0.18); scroll-snap-align: start; }
+.forecast-card { box-sizing: border-box; flex: 0 0 calc((100% - 2.7rem) / 4); min-height: 11rem; min-width: 0; padding: 1.15rem; border: 1px solid rgba(224, 236, 252, 0.18); border-radius: 10px; background: rgba(255, 255, 255, 0.1); box-shadow: 0 8px 24px rgba(3, 11, 26, 0.18); scroll-snap-align: start; }
 .forecast-card-topline { display: flex; align-items: start; justify-content: space-between; gap: 0.5rem; }
 .forecast-card h3 { margin: 0; font-size: 1.05rem; }
 .forecast-temperature { margin: 1rem 0 0.1rem; font-size: 2.3rem; line-height: 1; }
@@ -120,16 +120,22 @@
 @media (max-width: 620px) {
   .weather-header { align-items: start; flex-direction: column; }
   .updated-label { margin-top: 0.25rem; }
-  .forecast-card { min-height: 10rem; padding: 0.9rem; }
+  .forecast-card { flex-basis: calc(100% - 0.3rem); min-height: 10rem; padding: 0.9rem; }
+}
+
+@media (max-width: 900px) and (min-width: 621px) {
+  .forecast-card { flex-basis: calc((100% - 1.1rem) / 2); }
 }
 
 @media (max-height: 760px) {
   .weather-screen { padding-top: 1rem; padding-bottom: 1.25rem; }
-  .current-conditions { padding-top: 1rem; padding-bottom: 1.5rem; }
-  .weather-icon-large { width: 6rem; height: 4.75rem; margin: 0.35rem 0; }
-  .current-temperature { font-size: clamp(3rem, 10vh, 4.75rem); }
-  .forecast-card { min-height: 9rem; padding: 0.85rem; }
-  .forecast-temperature { margin-top: 0.65rem; }
+  .current-conditions { padding-top: 0.5rem; padding-bottom: 0.75rem; }
+  .weather-icon-large { width: 5rem; height: 4rem; margin: 0.2rem 0; }
+  .current-temperature { font-size: clamp(2.75rem, 8vh, 4rem); }
+  .current-details { margin-top: 0.5rem; }
+  .section-heading { margin-bottom: 0.5rem; }
+  .forecast-card { min-height: 7.5rem; padding: 0.7rem; }
+  .forecast-temperature { margin-top: 0.45rem; font-size: 2rem; }
 }
 
 @media (max-height: 560px) {
@@ -146,7 +152,6 @@
 @media (max-width: 620px) and (max-height: 650px) {
   .weather-screen { padding-inline: 1rem; }
   .current-conditions h2 { font-size: 1.25rem; }
-  .forecast-card { flex-basis: min(13rem, 78vw); }
 }
 
 .logo {
