@@ -6,11 +6,15 @@ import {
   getCurrent,
   getForecast,
 } from "./backendApi";
+import { getCurrentWindowsLocation } from "./nativeLocation";
+import { requestLocation } from "./locationIpc";
+import { runBootstrap } from "./bootstrapFlow";
 
 // Register IPC handlers from one place so main process can call this on startup.
 export function registerIpcHandlers() {
-  // Note: IP-based location lookup removed to avoid external IP service 403s.
-  // Prefer renderer `navigator.geolocation` and explicit user permission.
+  ipcMain.handle("location:get-current", async () => {
+    return requestLocation(getCurrentWindowsLocation);
+  });
 
   ipcMain.handle("create-session", async () => {
     return createSession();
@@ -33,23 +37,13 @@ export function registerIpcHandlers() {
   });
 
   ipcMain.handle("app:bootstrap", async (_e, { latitude, longitude }) => {
-    try {
-      const token = await createSession();
-      await saveLocation(token, latitude, longitude);
-      const current = await getCurrent(token);
-      const forecast = await getForecast(token);
-
-      return {
-        ok: true,
-        success: true,
-        sessionToken: token,
-        current,
-        forecast,
-      };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      // Best-effort: return a shaped error the renderer can understand.
-      return { ok: false, step: "createSession", message: msg } as any;
-    }
+    const result = await runBootstrap(
+      { createSession, saveLocation, getCurrent, getForecast },
+      latitude,
+      longitude,
+    );
+    return result.ok
+      ? { ...result, success: true }
+      : result;
   });
 }

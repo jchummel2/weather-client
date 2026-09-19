@@ -19,5 +19,5 @@ export default function App() {
 
   if (state.stage === "error") return <ErrorScreen message={state.message} />;
 
-  return <WeatherScreen current={state.current} forecast={state.forecast} />;
+  return <WeatherScreen current={state.current} forecast={state.forecast} location={state.approxLocation} />;
 }

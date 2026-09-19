@@ -1,142 +1,81 @@
-import { useEffect, useState } from "react";
-import type {
-  ForecastDto,
-  ForecastListDto,
-} from "../../electron/main/backendApi.types";
+import { useState } from "react";
+import type { ForecastDto, ForecastListDto } from "../../electron/main/backendApi.types";
+
+type LocationState = "idle" | "loading" | "success" | "permission-denied" | "unavailable" | "error";
 
 export function LaunchScreen({
   onDone,
   onError,
 }: {
-  onDone: (current: ForecastDto, forecast: ForecastListDto, approxLocation: { latitude: number; longitude: number; city: string | null; region: string | null; country: string | null; }) => void;
+  onDone: (current: ForecastDto, forecast: ForecastListDto, location: { latitude: number; longitude: number; city?: string | null }) => void;
   onError: (message: string) => void;
 }) {
-  const [message, setMessage] = useState("Starting…");
-  const [manual, setManual] = useState(false);
+  const [state, setState] = useState<LocationState>("idle");
+  const [message, setMessage] = useState("Use the Weatherly service to load local weather.");
 
-  useEffect(() => {
-    let cancelled = false;
+  async function requestCurrentLocation() {
+    setState("loading");
+    setMessage("Asking the Weatherly service for your location…");
 
-    async function start() {
-      try {
-        setMessage("Detecting location…");
-        const loc = await window.appApi.getApproxLocation();
-
-        if (cancelled) return;
-
-        setMessage(`Loading weather for ${loc.city ?? "your area"}…`);
-
-        const result = await window.appApi.bootstrap(loc.latitude, loc.longitude);
-
-        if (cancelled) return;
-
-        if (!result.ok) {
-          onError(`${result.step}: ${result.message}`);
-          return;
-        }
-
-        // Validate server response to avoid rendering with undefined props
-        if (!result.current || !result.forecast) {
-          onError("Invalid server response: missing current or forecast data");
-          return;
-        }
-
-        onDone(result.current, result.forecast, loc);
-      } catch (e: any) {
-        // If geolocation failed (eg. Chromium tries Google geolocation and returns 403),
-        // allow the user to enter a location manually instead of failing hard.
-        setMessage("Automatic location failed — please enter location manually.");
-        setManual(true);
-      }
-    }
-
-    start();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [onDone, onError]);
-
-  return (
-    <div style={{ padding: 40 }}>
-      <div style={{ marginBottom: 12 }}>{message}</div>
-
-      {manual ? (
-        <ManualLocationForm
-          onSubmit={async (lat, lon) => {
-            setMessage("Starting with manual location…");
-            try {
-              const result = await window.appApi.bootstrap(lat, lon);
-              if (!result.ok) {
-                onError(`${result.step}: ${result.message}`);
-                return;
-              }
-              onDone(result.current, result.forecast, { latitude: lat, longitude: lon, city: null, region: null, country: null });
-            } catch (err: any) {
-              onError(err?.message ?? "Manual startup failed");
-            }
-          }}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function ManualLocationForm({ onSubmit }: { onSubmit: (lat: number, lon: number) => Promise<void> | void }) {
-  const [lat, setLat] = useState("");
-  const [lon, setLon] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function submit() {
-    const latitude = Number(lat);
-    const longitude = Number(lon);
-
-    if (!lat.trim() || !lon.trim() || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      setError("Enter numeric latitude and longitude values.");
-      return;
-    }
-
-    if (latitude < -90 || latitude > 90) {
-      setError("Latitude must be between -90 and 90.");
-      return;
-    }
-
-    if (longitude < -180 || longitude > 180) {
-      setError("Longitude must be between -180 and 180.");
-      return;
-    }
-
-    setError(null);
-    setSubmitting(true);
     try {
-      await onSubmit(latitude, longitude);
-    } finally {
-      setSubmitting(false);
+      const locationResult = await window.locationApi.getCurrentLocation();
+      if (!locationResult.ok) {
+        const locationState = locationResult.code === "permission-denied" || locationResult.code === "disabled"
+          ? "permission-denied"
+          : locationResult.code === "unavailable" || locationResult.code === "timeout"
+            ? "unavailable"
+            : "error";
+        setState(locationState);
+        setMessage(locationResult.message);
+        return;
+      }
+
+      setState("success");
+      setMessage("Location found. Loading weather…");
+      const { latitude, longitude } = locationResult.location;
+      const result = await window.appApi.bootstrap(latitude, longitude);
+
+      if (!result.ok) {
+        onError(`${result.step}: ${result.message}`);
+        return;
+      }
+      if (!result.current || !result.forecast) {
+        onError("Invalid server response: missing current or forecast data");
+        return;
+      }
+
+      onDone(result.current, result.forecast, { latitude, longitude });
+    } catch (error: unknown) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "Location startup failed.");
     }
   }
 
+  const canRetry = state !== "loading";
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submit();
-      }}
-    >
-      <div style={{ marginBottom: 8 }}>
-        <label>
-          Latitude: <input type="number" step="any" min="-90" max="90" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="38.9072" required />
-        </label>
-      </div>
-      <div style={{ marginBottom: 8 }}>
-        <label>
-          Longitude: <input type="number" step="any" min="-180" max="180" value={lon} onChange={(e) => setLon(e.target.value)} placeholder="-77.0369" required />
-        </label>
-      </div>
-      {error ? <div role="alert" style={{ marginBottom: 8 }}>{error}</div> : null}
-      <button type="submit" disabled={submitting}>
-        {submitting ? "Loading weather…" : "Use this location"}
-      </button>
-    </form>
+    <main className="launch-screen">
+      <section className="launch-panel" aria-live="polite">
+        <p className="eyebrow">Weatherly service</p>
+        <h1>Local weather, without typing.</h1>
+        <p className="launch-message">{message}</p>
+
+        {state === "permission-denied" ? (
+          <p role="alert" className="launch-help">
+            Allow location access for Weatherly in Windows Settings, then try again.
+          </p>
+        ) : null}
+        {state === "unavailable" ? (
+          <p role="alert" className="launch-help">
+            Weatherly could not find a location provider. Check Windows Location Services and try again.
+          </p>
+        ) : null}
+        {state === "error" ? <p role="alert" className="launch-help">Try again or check that the weather service is running.</p> : null}
+
+        <button type="button" onClick={() => void requestCurrentLocation()} disabled={!canRetry}>
+          {state === "loading" ? "Finding your location…" : "Use my current location"}
+        </button>
+      </section>
+    </main>
   );
 }

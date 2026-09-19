@@ -1,7 +1,11 @@
-import { ipcMain, app, BrowserWindow } from "electron";
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+import { app, ipcMain, BrowserWindow } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
+import { spawn } from "node:child_process";
 const BASE_URL = "http://localhost:8080";
 let sessionToken = null;
 function sessionHeader(token) {
@@ -121,7 +125,190 @@ async function getForecast(token) {
   }
   return jsonOrThrow(resp, "forecast");
 }
+function validateLocation(value) {
+  const location = value;
+  if (!location || typeof location.latitude !== "number" || typeof location.longitude !== "number" || !Number.isFinite(location.latitude) || !Number.isFinite(location.longitude) || location.latitude < -90 || location.latitude > 90 || location.longitude < -180 || location.longitude > 180) {
+    throw new Error("Windows returned invalid latitude or longitude values.");
+  }
+  return {
+    latitude: location.latitude,
+    longitude: location.longitude,
+    city: typeof location.city === "string" && location.city.trim() ? location.city.trim() : null
+  };
+}
+class NativeLocationError extends Error {
+  constructor(code, message) {
+    super(message);
+    __publicField(this, "code");
+    this.code = code;
+    this.name = "NativeLocationError";
+  }
+}
+const LOCATION_TIMEOUT_MS = 15e3;
+const HELPER_NAME = "get-current-location.ps1";
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
+function helperPath() {
+  const candidates = [
+    path.join(process.resourcesPath, "windows", HELPER_NAME),
+    path.join(app.getAppPath(), "electron", "windows", HELPER_NAME),
+    path.join(moduleDirectory, "..", "windows", HELPER_NAME)
+  ];
+  const candidate = candidates.find((value) => fs.existsSync(value));
+  if (!candidate) {
+    throw new NativeLocationError(
+      "helper-not-found",
+      "The Windows location helper is not installed with this application."
+    );
+  }
+  return candidate;
+}
+function classifyHelperFailure(output) {
+  const normalized = output.toLowerCase();
+  if (normalized.includes("permission_denied")) {
+    return new NativeLocationError(
+      "permission-denied",
+      "Windows denied location permission. Enable Location Services for this app and try again."
+    );
+  }
+  if (normalized.includes("disabled")) {
+    return new NativeLocationError(
+      "disabled",
+      "Windows Location Services are disabled. Enable them in Windows Settings and try again."
+    );
+  }
+  if (normalized.includes("unavailable")) {
+    return new NativeLocationError(
+      "unavailable",
+      "Windows could not find an available location provider."
+    );
+  }
+  return new NativeLocationError(
+    "helper-failed",
+    output.trim() || "The Windows location helper failed."
+  );
+}
+function getCurrentWindowsLocation() {
+  if (process.platform !== "win32") {
+    return Promise.reject(
+      new NativeLocationError(
+        "unavailable",
+        "Windows Location Services are only available on Windows."
+      )
+    );
+  }
+  let script;
+  try {
+    script = helperPath();
+  } catch (error) {
+    return Promise.reject(error);
+  }
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        script
+      ],
+      { windowsHide: true }
+    );
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const finish = (callback) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      callback();
+    };
+    const timeout = setTimeout(() => {
+      child.kill();
+      finish(
+        () => reject(
+          new NativeLocationError(
+            "timeout",
+            "Windows location lookup timed out."
+          )
+        )
+      );
+    }, LOCATION_TIMEOUT_MS);
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => {
+      finish(() => reject(classifyHelperFailure(error.message)));
+    });
+    child.on("close", (code) => {
+      finish(() => {
+        if (code !== 0) {
+          reject(classifyHelperFailure(`${stdout}
+${stderr}`));
+          return;
+        }
+        try {
+          resolve(validateLocation(JSON.parse(stdout)));
+        } catch (error) {
+          reject(
+            new NativeLocationError(
+              "invalid-coordinates",
+              error instanceof Error ? error.message : "The Windows location helper returned malformed data."
+            )
+          );
+        }
+      });
+    });
+  });
+}
+async function requestLocation(getLocation) {
+  try {
+    return { ok: true, location: await getLocation() };
+  } catch (error) {
+    const details = error;
+    return {
+      ok: false,
+      code: details.code ?? "helper-failed",
+      message: details.message ?? "Windows location lookup failed."
+    };
+  }
+}
+async function runBootstrap(dependencies, latitude, longitude) {
+  let token;
+  try {
+    token = await dependencies.createSession();
+  } catch (error) {
+    return { ok: false, step: "createSession", message: errorMessage(error) };
+  }
+  try {
+    await dependencies.saveLocation(token, latitude, longitude);
+  } catch (error) {
+    return { ok: false, step: "saveLocation", message: errorMessage(error) };
+  }
+  let current;
+  try {
+    current = await dependencies.getCurrent(token);
+  } catch (error) {
+    return { ok: false, step: "current", message: errorMessage(error) };
+  }
+  try {
+    const forecast = await dependencies.getForecast(token);
+    return { ok: true, sessionToken: token, current, forecast };
+  } catch (error) {
+    return { ok: false, step: "forecast", message: errorMessage(error) };
+  }
+}
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
 function registerIpcHandlers() {
+  ipcMain.handle("location:get-current", async () => {
+    return requestLocation(getCurrentWindowsLocation);
+  });
   ipcMain.handle("create-session", async () => {
     return createSession();
   });
@@ -139,22 +326,12 @@ function registerIpcHandlers() {
     return getForecast(token);
   });
   ipcMain.handle("app:bootstrap", async (_e, { latitude, longitude }) => {
-    try {
-      const token = await createSession();
-      await saveLocation(token, latitude, longitude);
-      const current = await getCurrent(token);
-      const forecast = await getForecast(token);
-      return {
-        ok: true,
-        success: true,
-        sessionToken: token,
-        current,
-        forecast
-      };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return { ok: false, step: "createSession", message: msg };
-    }
+    const result = await runBootstrap(
+      { createSession, saveLocation, getCurrent, getForecast },
+      latitude,
+      longitude
+    );
+    return result.ok ? { ...result, success: true } : result;
   });
 }
 const __filename$1 = fileURLToPath(import.meta.url);
@@ -187,18 +364,6 @@ function createWindow() {
       nodeIntegration: false
     }
   });
-  try {
-    const ses = win.webContents.session;
-    ses.setPermissionRequestHandler((_webContents, permission, callback) => {
-      if (permission === "geolocation") {
-        callback(true);
-      } else {
-        callback(false);
-      }
-    });
-  } catch (e) {
-    console.warn("Failed to set permission handler", e);
-  }
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
     win.webContents.openDevTools({ mode: "detach" });

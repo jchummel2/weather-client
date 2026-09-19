@@ -44,23 +44,6 @@ function createWindow(): BrowserWindow {
     },
   });
 
-  // Auto-approve geolocation permission requests so `navigator.geolocation`
-  // works without manual intervention during development. In production you
-  // should implement a proper permission flow.
-  try {
-    const ses = win.webContents.session;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (ses as any).setPermissionRequestHandler((_webContents: any, permission: string, callback: (grant: boolean) => void) => {
-      if (permission === "geolocation") {
-        callback(true);
-      } else {
-        callback(false);
-      }
-    });
-  } catch (e) {
-    console.warn("Failed to set permission handler", e);
-  }
-
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
     win.webContents.openDevTools({ mode: "detach" });
